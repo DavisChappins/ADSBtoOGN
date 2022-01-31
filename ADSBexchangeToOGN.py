@@ -330,7 +330,7 @@ while True:
         print('\ntraffic list length:',len(traffic_list),'*************','Local time:',datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),'Uptime:',int(timer//3600),'hours',int((timer%3600)//60),'minutes',int((timer%3600)%60),'seconds')
         for n in range(len(traffic_list)):
             #print traffic list for sanity
-            print(n,'--', 'ADSB:',traffic_list[n].id_ADSB,'OGN:',traffic_list[n].id_OGN,
+            print(n+1,'--', 'ADSB:',traffic_list[n].id_ADSB,'OGN:',traffic_list[n].id_OGN,
                   'ADSB time:',traffic_list[n].timelast_ADSB,'OGN time:',traffic_list[n].timelast_OGN,
                   'ADSB lat:',traffic_list[n].lat_ADSB,'OGN lat:',traffic_list[n].lat_OGN,
                   'ADSB lon:',traffic_list[n].lon_ADSB,'OGN lon:',traffic_list[n].lon_OGN,
