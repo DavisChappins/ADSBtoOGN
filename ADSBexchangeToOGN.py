@@ -324,7 +324,8 @@ while True:
             print(traffic_list[m].id_ADSB,traffic_list[m].id_OGN,'OGN missing for more than 60 seconds, removing at',datetime.now())
             traffic_list.pop(m)
             break
-
+	
+	#encode and send to APRS server
     if tenSecondTimer > 9.9: #9.9, 10 second timer
         print('\ntraffic list length:',len(traffic_list),'*************','Local time:',datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),'Uptime:',int(timer//3600),'hours',int((timer%3600)//60),'minutes',int((timer%3600)%60),'seconds')
         for n in range(len(traffic_list)):
@@ -393,8 +394,13 @@ while True:
                         print(e,'error encoding')
                         pass
                 sock.close()
-    
+	
+    #keepalive to APRS server (kicks after 30 mins if not)	
+    if fiveMinuteTimer > 299.9: #300 second (5 minute) timer
+        try:
+            sock.send('#keepalive\n'.encode())
+        except Exception as e:
+            print(e,'error keepalive')
+            pass
+
     time.sleep(.09)
-
-
-
