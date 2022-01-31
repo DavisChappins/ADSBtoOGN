@@ -382,19 +382,19 @@ while True:
                 
                 #Sanity check for encoded APRS OGN data
                 if lat != '0' and lon != '0':
-                    encode_ICAO = str(ICAO + '>APRS,qAS,ADSBExch:/' + time_UTC + 'h' + lat + '/' + lon + ac_type + heading + '/' + speed + '/' + 'A=' + alt + ' !W00! ' + ICAO_id + climb + 'fpm' + turn + 'rot' + sig_stren + 'dB ' + errors + ' ' + offset + 'kHz' + gps_stren + newline)
-                    print('**sending data:',encode_ICAO.strip())
-                    
-                    #Encode and send to APRS servers
                     try:
+                        encode_ICAO = str(ICAO + '>APRS,qAS,ADSBExch:/' + time_UTC + 'h' + lat + '/' + lon + ac_type + heading + '/' + speed + '/' + 'A=' + alt + ' !W00! ' + ICAO_id + climb + 'fpm' + turn + 'rot' + sig_stren + 'dB ' + errors + ' ' + offset + 'kHz' + gps_stren + newline)
+                        print('**sending data:',encode_ICAO.strip())
+                    
+                        #Encode and send to APRS servers
                         sock.send(encode_ICAO.encode())
-                    #time.sleep(.02)
-                    #sock.send(encode_ICAO.encode())
+                        #time.sleep(.02)
+                        #sock.send(encode_ICAO.encode())
                     except Exception as e:
                         print(e,'error encoding')
                         pass
                 sock.close()
-	
+
     #keepalive to APRS server (kicks after 30 mins if not)	
     if fiveMinuteTimer > 299.9: #300 second (5 minute) timer
         try:
@@ -404,3 +404,4 @@ while True:
             pass
 
     time.sleep(.09)
+
