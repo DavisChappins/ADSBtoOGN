@@ -399,7 +399,7 @@ while True:
     if fiveMinuteTimer > 299.9: #300 second (5 minute) timer
         try:
             sock.send('#keepalive\n'.encode())
-	    print('Sending #keepalive')
+	    print('\nSending #keepalive')
         except Exception as e:
             print(e,'error keepalive')
             pass
