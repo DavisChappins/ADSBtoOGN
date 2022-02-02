@@ -70,6 +70,8 @@ def getADSB():
                 glider.lon_ADSB = round(ADSBaircraft['ac'][i]['lon'],4)     #4 digit longitude ie -105.2402
                 try:
                     glider.alt_ADSB = ADSBaircraft['ac'][i]['alt_baro']         #ft
+                    if isinstance(glider.alt_ADSB,str): #force alt to 0 if on ground
+                        glider.alt_ADSB = 0
                 except:
                     pass
                 try:
@@ -100,36 +102,34 @@ def getADSB():
                     pass
                 print(i+1,') ',glider.id, 'type:',glider.type_ADSB,'reg:',glider.callsign_ADSB,'at:', glider.lat_ADSB,glider.lon_ADSB,'alt:',glider.alt_ADSB,'spd:',glider.speed_ADSB,'trk:',glider.heading_ADSB,'clb:',glider.climb_ADSB)
                 
-                
                 seen = False
-                for x, item in enumerate(traffic_list): #add gliders to traffic list, update if they already exist
-                    if item.id == glider.id:
-                        traffic_list[x].id = glider.id
-                        traffic_list[x].id_ADSB = glider.id_ADSB
-                        traffic_list[x].callsign_ADSB = glider.callsign_ADSB
-                        traffic_list[x].timelast_ADSB = glider.timelast_ADSB
-                        traffic_list[x].lat_ADSB = glider.lat_ADSB
-                        traffic_list[x].lon_ADSB = glider.lon_ADSB
-                        traffic_list[x].alt_ADSB = glider.alt_ADSB
-                        traffic_list[x].speed_ADSB = glider.speed_ADSB
-                        traffic_list[x].heading_ADSB = glider.heading_ADSB
-                        traffic_list[x].climb_ADSB = glider.climb_ADSB
-                        traffic_list[x].type_ADSB = glider.type_ADSB
-                        #print("id",traffic_list[x].id)                          
-                        #print("id_ADSB",traffic_list[x].id_ADSB)                          
-                        #print("callsign_ADSB",traffic_list[x].callsign_ADSB)                           
-                        #print("timelast_ADSB",traffic_list[x].timelast_ADSB)                          
-                        #print("lat_ADSB",traffic_list[x].lat_ADSB)                           
-                        #print("lon_ADSB",traffic_list[x].lon_ADSB)                           
-                        #print("alt_ADSB",traffic_list[x].alt_ADSB)
-                        #print("speed_ADSB",traffic_list[x].speed_ADSB)
-                        #print("heading_ADSB",traffic_list[x].heading_ADSB)
-                        #print("climb_ADSB",traffic_list[x].climb_ADSB)
-    
-                        seen = True
-                        break
-                if not seen:
-                    traffic_list.append(glider)
+
+                #only allow wanted objects (type, alt, lat/lon)
+                if glider.type_ADSB != 'GLID' or glider.type_ADSB != 'DIMO':                    #reject if not glider or motorglider types
+                    print(glider.id,'rejected because not glider')
+                elif glider.alt_ADSB == 0:                                                      #reject if on ground or altitude unknown
+                    print(glider.id,'rejected because on ground')
+                elif glider.lat_ADSB < 10 or glider.lon_ADSB < -130 or glider.lon_ADSB > -60:   #reject if outside of north america
+                    print(glider.id,'rejected because outside of north america')
+                else:                
+                    for x, item in enumerate(traffic_list): #add gliders to traffic list, update if they already exist
+                        if item.id == glider.id:
+                            traffic_list[x].id = glider.id
+                            traffic_list[x].id_ADSB = glider.id_ADSB
+                            traffic_list[x].callsign_ADSB = glider.callsign_ADSB
+                            traffic_list[x].timelast_ADSB = glider.timelast_ADSB
+                            traffic_list[x].lat_ADSB = glider.lat_ADSB
+                            traffic_list[x].lon_ADSB = glider.lon_ADSB
+                            traffic_list[x].alt_ADSB = glider.alt_ADSB
+                            traffic_list[x].speed_ADSB = glider.speed_ADSB
+                            traffic_list[x].heading_ADSB = glider.heading_ADSB
+                            traffic_list[x].climb_ADSB = glider.climb_ADSB
+                            traffic_list[x].type_ADSB = glider.type_ADSB
+        
+                            seen = True
+                            break
+                    if not seen:
+                        traffic_list.append(glider)
             except Exception as e:
                 print(i+1,') ',glider.id,e,'<- parameter missing from ADSBExchange JSON')
                 #print('<- error in parsing JSON from ADSBExchange - missing parameter above')
@@ -291,19 +291,19 @@ while True:
     timenow = datetime.utcnow().strftime("%H%M%S")
 
 
-    #remove ADSB objects that are known to be not 'GLID' type:
-    for m in range(len(traffic_list)):
-        if traffic_list[m].type_ADSB != 'GLID' and traffic_list[m].type_ADSB != 'DIMO': #GLID is glider, DIMO is hk36 motorglider...more?
-            print(traffic_list[m].id_ADSB,traffic_list[m].type_ADSB,"Not type 'GLID', removing at",datetime.now())
-            traffic_list.pop(m)
-            break
+    #remove ADSB objects that are known to be not 'GLID' type: - moved to getADSB function
+    #for m in range(len(traffic_list)):
+        #if traffic_list[m].type_ADSB != 'GLID' and traffic_list[m].type_ADSB != 'DIMO': #GLID is glider, DIMO is hk36 motorglider...more?
+            #print(traffic_list[m].id_ADSB,traffic_list[m].type_ADSB,"Not type 'GLID', removing at",datetime.now())
+            #traffic_list.pop(m)
+            #break
 
-    #remove ADSB objects that are not in North America:
-    for m in range(len(traffic_list)):
-        if traffic_list[m].lat_ADSB < -1 or traffic_list[m].lat_ADSB > 60 or traffic_list[m].lon_ADSB < -130 or traffic_list[m].lon_ADSB > 1:
-            print(traffic_list[m].id_ADSB,traffic_list[m].lat_ADSB,traffic_list[m].lon_ADSB,'Outside North America, removing at',datetime.now())
-            traffic_list.pop(m)
-            break
+    #remove ADSB objects that are not in North America: - moved to getADSB function
+    #for m in range(len(traffic_list)):
+        #if traffic_list[m].lat_ADSB < -1 or traffic_list[m].lat_ADSB > 60 or traffic_list[m].lon_ADSB < -130 or traffic_list[m].lon_ADSB > 1:
+            #print(traffic_list[m].id_ADSB,traffic_list[m].lat_ADSB,traffic_list[m].lon_ADSB,'Outside North America, removing at',datetime.now())
+            #traffic_list.pop(m)
+            #break
 
     #remove ADSB objects older than 60 seconds:
     for m in range(len(traffic_list)):
@@ -324,8 +324,8 @@ while True:
             print(traffic_list[m].id_ADSB,traffic_list[m].id_OGN,'OGN missing for more than 60 seconds, removing at',datetime.now())
             traffic_list.pop(m)
             break
-	
-	#encode and send to APRS server
+
+    #encode and send to APRS server
     if tenSecondTimer > 9.9: #9.9, 10 second timer
         print('\ntraffic list length:',len(traffic_list),'*************','Local time:',datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),'Uptime:',int(timer//3600),'hours',int((timer%3600)//60),'minutes',int((timer%3600)%60),'seconds')
         for n in range(len(traffic_list)):
@@ -388,21 +388,20 @@ while True:
                     
                         #Encode and send to APRS servers
                         sock.send(encode_ICAO.encode())
-                        #time.sleep(.02)
-                        #sock.send(encode_ICAO.encode())
                     except Exception as e:
                         print(e,'error encoding')
                         pass
                 sock.close()
 
-    #keepalive to APRS server (kicks after 30 mins if not)	
+    #keepalive to APRS server (kicks after 30 mins if not)
     if fiveMinuteTimer > 299.9: #300 second (5 minute) timer
         try:
             sock.send('#keepalive\n'.encode())
-	    print('\nSending #keepalive')
+            print('\nSending #keepalive')
         except Exception as e:
             print(e,'error keepalive')
             pass
 
     time.sleep(.09)
+
 
