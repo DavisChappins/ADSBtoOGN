@@ -8,12 +8,30 @@ import socket
 import math
 import time
 import requests
+import os
+import sys
+import psutil
+import logging
 
 global glider_ICAO
 global APRSbeacon
 global traffic_list
 
+def restart_program():
+    """Restarts the current program, with file objects and descriptors
+       cleanup
+    """
 
+    try:
+        p = psutil.Process(os.getpid())
+        for handler in p.get_open_files() + p.connections():
+            os.close(handler.fd)
+    except Exception as e:
+        logging.error(e)
+
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
+    
 
 class aircraft():
     def __init__(self):
@@ -103,14 +121,14 @@ def getADSB():
                 print(i+1,') ',glider.id, 'type:',glider.type_ADSB,'reg:',glider.callsign_ADSB,'at:', glider.lat_ADSB,glider.lon_ADSB,'alt:',glider.alt_ADSB,'spd:',glider.speed_ADSB,'trk:',glider.heading_ADSB,'clb:',glider.climb_ADSB)
                 
                 seen = False
-
+                
                 #only allow wanted objects (type, alt, lat/lon)
-                if glider.type_ADSB != 'GLID' or glider.type_ADSB != 'DIMO':                    #reject if not glider or motorglider types
-                    print(glider.id,'rejected because not glider')
-                elif glider.alt_ADSB == 0:                                                      #reject if on ground or altitude unknown
-                    print(glider.id,'rejected because on ground')
-                elif glider.lat_ADSB < 10 or glider.lon_ADSB < -130 or glider.lon_ADSB > -60:   #reject if outside of north america
-                    print(glider.id,'rejected because outside of north america')
+                if glider.type_ADSB == 'ULAC' or glider.type_ADSB == 'C150' or glider.type_ADSB == 'PA25' or glider.type_ADSB == 'C182' or glider.type_ADSB == 'C180':                                                  #reject if not glider or motorglider types
+                    print(i+1,'is rejected because not glider:',glider.type_ADSB)
+                elif glider.alt_ADSB == 0:                                                        #reject if on ground or altitude unknown
+                    print(i+1,'is rejected because on ground')
+                elif glider.lat_ADSB < 23 or glider.lon_ADSB < -130 or glider.lon_ADSB > -60:   #reject if outside of north america
+                    print(i+1,' is rejected because outside of north america')
                 else:                
                     for x, item in enumerate(traffic_list): #add gliders to traffic list, update if they already exist
                         if item.id == glider.id:
@@ -134,7 +152,7 @@ def getADSB():
                 print(i+1,') ',glider.id,e,'<- parameter missing from ADSBExchange JSON')
                 #print('<- error in parsing JSON from ADSBExchange - missing parameter above')
                 pass
-        time.sleep(9.89) #access the ADSBExchange API every 10 secs
+        time.sleep(5) #access the ADSBExchange API every 5 secs
     
     
     
@@ -257,7 +275,7 @@ OGNThread.start()
 APRS_SERVER_PUSH = 'glidern2.glidernet.org'
 APRS_SERVER_PORT =  14580 #10152
 APRS_USER_PUSH = 'ADSBex'
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 4096
 APRS_FILTER = 'g/ALL'
 
 print('Connecting to OGN APRS server')
@@ -276,6 +294,27 @@ sock.send(login)
 
 data = sock.recv(BUFFER_SIZE)
 print("APRS Login reply:  ", data) #server response
+
+
+
+
+if data == b'': #if APRS server does not respond, try to login again
+    print('No response from APRS server, restarting program in 5s')
+    time.sleep(5)
+    restart_program()
+    #sock.shutdown(socket.SHUT_RDWR)
+    #sock.close()
+    
+    #sock.connect((APRS_SERVER_PUSH, APRS_SERVER_PORT))
+    #sock_file = sock.makefile('rb')
+    #sock.send(login)
+    #data = sock.recv(BUFFER_SIZE)
+    #print("APRS Login reply:  ", data) #server response
+    #time.sleep(1)
+    #sock.send(login)
+    #print("APRS Login reply:  ", data) #server response
+    #if data != b'':
+        #break   
 
 
 #send traffic_list to APRS server periodically
@@ -326,7 +365,7 @@ while True:
             break
 
     #encode and send to APRS server
-    if tenSecondTimer > 9.9: #9.9, 10 second timer
+    if fiveSecondTimer > 4.9: #4.9, 5 second timer
         print('\ntraffic list length:',len(traffic_list),'*************','Local time:',datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),'Uptime:',int(timer//3600),'hours',int((timer%3600)//60),'minutes',int((timer%3600)%60),'seconds')
         for n in range(len(traffic_list)):
             #print traffic list for sanity
@@ -398,6 +437,8 @@ while True:
         try:
             sock.send('#keepalive\n'.encode())
             print('\nSending #keepalive')
+        except IOError as e:
+            restart_program()
         except Exception as e:
             print(e,'error keepalive')
             pass
