@@ -123,7 +123,7 @@ def getADSB():
                 seen = False
                 
                 #only allow wanted objects (type, alt, lat/lon)
-                if glider.type_ADSB == 'ULAC' or glider.type_ADSB == 'C150' or glider.type_ADSB == 'PA25' or glider.type_ADSB == 'C182' or glider.type_ADSB == 'C180':                                                  #reject if not glider or motorglider types
+                if glider.type_ADSB == 'ULAC': #reject ultralights but let "towplanes" through --- or glider.type_ADSB == 'C150' or glider.type_ADSB == 'PA25' or glider.type_ADSB == 'C182' or glider.type_ADSB == 'C180':                                                  #reject if not glider or motorglider types
                     print(i+1,'is rejected because not glider:',glider.type_ADSB)
                 elif glider.alt_ADSB == 0:                                                        #reject if on ground or altitude unknown
                     print(i+1,'is rejected because on ground')
@@ -397,10 +397,13 @@ while True:
                     alt = int(traffic_list[n].alt_ADSB)
                     alt = "{:06d}".format(alt)
                     
-                    if traffic_list[n].id_OGN[:3] == 'FLR':
+                    if traffic_list[n].id_OGN[:3] == 'FLR': #check for FLARM vs ICAO targets
                         ICAO_id = 'id06'+ ICAO[3:] #id05 for ICA - id06 for FLR depending on traffic_list[n].id_OGN
                     else:
                         ICAO_id = 'id05'+ ICAO[3:] #id05 for ICA - id06 for FLR depending on traffic_list[n].id_OGN
+                        
+                    if traffic_list[n].type_ADSB == 'C150' or traffic_list[n].type_ADSB == 'PA25' or traffic_list[n].type_ADSB == 'C182' or traffic_list[n].type_ADSB == 'C180' or traffic_list[n].type_ADSB == 'M7': #towplanes
+                        ICAO_id = 'id09'+ ICAO[3:] #id09 for ICA and type towplane
                     
                     if traffic_list[n].climb_ADSB > 0:
                         climb = ' +' + str(traffic_list[n].climb_ADSB)
@@ -429,6 +432,8 @@ while True:
                         sock.send(encode_ICAO.encode())
                     except Exception as e:
                         print(e,'error encoding')
+                        print('restarting program to fix error')
+                        restart_program()
                         pass
                 sock.close()
 
